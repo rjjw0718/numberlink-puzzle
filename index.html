@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>넘버링크 (Numberlink): 수학적 논리 퍼즐</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- 수학 좌표계 & 수식 배경 캔버스 -->
+  <canvas id="bg-canvas"></canvas>
+
+  <!-- 축하 폭죽 파티클 캔버스 -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- 메인 애플리케이션 컨테이너 -->
+  <main id="app">
+
+    <!-- ====================================================================
+         1. 시작 화면 (Intro Screen)
+         ==================================================================== -->
+    <section id="screen-intro" class="screen active">
+      <div class="intro-container">
+        <!-- 수학적 기하학 & 네트워크 노드 엠블럼 SVG -->
+        <svg class="math-emblem" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- 격자 배경 선 -->
+          <line x1="20" y1="20" x2="80" y2="20" stroke="rgba(56, 189, 248, 0.2)" stroke-width="1"/>
+          <line x1="20" y1="50" x2="80" y2="50" stroke="rgba(56, 189, 248, 0.2)" stroke-width="1"/>
+          <line x1="20" y1="80" x2="80" y2="80" stroke="rgba(56, 189, 248, 0.2)" stroke-width="1"/>
+          <line x1="20" y1="20" x2="20" y2="80" stroke="rgba(56, 189, 248, 0.2)" stroke-width="1"/>
+          <line x1="50" y1="20" x2="50" y2="80" stroke="rgba(56, 189, 248, 0.2)" stroke-width="1"/>
+          <line x1="80" y1="20" x2="80" y2="80" stroke="rgba(56, 189, 248, 0.2)" stroke-width="1"/>
+          
+          <!-- 원형 좌표 링 -->
+          <circle cx="50" cy="50" r="44" stroke="#06B6D4" stroke-width="1.5" stroke-dasharray="3 3"/>
+          <circle cx="50" cy="50" r="34" stroke="rgba(59, 130, 246, 0.4)" stroke-width="1"/>
+          
+          <!-- 수학적 연결 경로 (Numberlink 모티프) -->
+          <path d="M20 20 L50 20 L50 50 L80 50" stroke="#00F5D4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20 80 L50 80 L50 50" stroke="#F59E0B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M80 20 L80 80" stroke="#EC4899" stroke-width="3" stroke-linecap="round"/>
+
+          <!-- 노드 포인트 -->
+          <circle cx="20" cy="20" r="5" fill="#00F5D4" stroke="#FFFFFF" stroke-width="1.5"/>
+          <circle cx="80" cy="50" r="5" fill="#00F5D4" stroke="#FFFFFF" stroke-width="1.5"/>
+          <circle cx="20" cy="80" r="5" fill="#F59E0B" stroke="#FFFFFF" stroke-width="1.5"/>
+          <circle cx="50" cy="50" r="5" fill="#F59E0B" stroke="#FFFFFF" stroke-width="1.5"/>
+          <circle cx="80" cy="20" r="5" fill="#EC4899" stroke="#FFFFFF" stroke-width="1.5"/>
+          <circle cx="80" cy="80" r="5" fill="#EC4899" stroke="#FFFFFF" stroke-width="1.5"/>
+        </svg>
+
+        <div class="intro-badge">MATHEMATICAL LOGIC PUZZLE</div>
+        <h1 class="intro-title">넘버링크<br><span style="font-size: 0.75em; color: var(--accent-cyan); font-weight: 600;">Numberlink</span></h1>
+        
+        <p class="intro-desc">
+          격자 위의 같은 숫자를 선으로 잇고, 모든 빈칸을 하나의 막힘없는 경로로 가득 채우세요.<br>
+          5×5 기본 격자부터 10×10 최고난도 격자까지 16개의 수학 퍼즐이 펼쳐집니다!
+        </p>
+
+        <div class="intro-features">
+          <div class="feat-item">📐 16단계 점진적 난이도</div>
+          <div class="feat-item">✍️ 마우스 & 터치 드래그</div>
+          <div class="feat-item">🧩 100% 빈칸 채우기 퍼즐</div>
+        </div>
+
+        <button id="btn-start-game" class="btn-primary">
+          <span>게임 시작</span>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         2. 게임 규칙 설명 화면 (Rules Screen)
+         ==================================================================== -->
+    <section id="screen-rules" class="screen">
+      <div class="rules-container">
+        <header class="rules-header">
+          <h2 class="rules-title">📐 넘버링크 수학적 규칙</h2>
+          <p class="rules-subtitle">퍼즐을 완성하기 위해 지켜야 하는 3가지 핵심 논리 법칙입니다.</p>
+        </header>
+
+        <!-- 3대 핵심 규칙 카드 -->
+        <div class="rules-grid">
+          <div class="rule-card">
+            <div class="rule-num">01</div>
+            <h3>같은 숫자 연결</h3>
+            <p>
+              격자 위에 주어진 <strong>같은 번호의 두 숫자를 하나의 연속된 선</strong>으로 연결하세요. (예: 1은 1끼리, 2는 2끼리 연결)
+            </p>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-num">02</div>
+            <h3>직선의 불교차 원칙</h3>
+            <p>
+              <strong>선이 서로 교차하거나 분기해서는 안 됩니다.</strong> 즉, 격자의 작은 정사각형 하나는 <strong>단 한 번만</strong> 지나갈 수 있습니다.
+            </p>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-num">03</div>
+            <h3>완전한 빈칸 채우기 (전수 피복)</h3>
+            <p>
+              퍼즐이 완성되었을 때, <strong>선이 그려지지 않은 빈칸이 단 하나도 있어서는 안 됩니다.</strong> 격자의 모든 칸(100%)을 완전히 채워야 정답으로 인정됩니다!
+            </p>
+          </div>
+        </div>
+
+        <!-- 예시 문제 및 조작 안내 -->
+        <div class="rules-example-box">
+          <div class="example-title">
+            <span>💡 문제 및 정답 예시 가이드</span>
+          </div>
+
+          <div class="example-content">
+            <div class="example-img-wrap">
+              <img src="example.png" alt="넘버링크 규칙 예시 (문제 및 정답)" />
+            </div>
+
+            <div class="example-guide">
+              <div class="guide-step">
+                <span class="guide-step-icon">1</span>
+                <div><strong>마우스 / 터치 드래그</strong>: 번호가 적힌 원을 누르고 이웃한 칸으로 드래그하여 선을 그립니다.</div>
+              </div>
+              <div class="guide-step">
+                <span class="guide-step-icon">2</span>
+                <div><strong>되감기 (Backtrack)</strong>: 잘못 그었을 때는 드래그한 방향 반대로 되돌아가면 선이 자연스럽게 지워집니다.</div>
+              </div>
+              <div class="guide-step">
+                <span class="guide-step-icon">3</span>
+                <div><strong>되돌리기 & 초기화</strong>: 하단의 [되돌리기]로 직전 수를 취소하거나 [다시 시작]으로 보드를 비울 수 있습니다.</div>
+              </div>
+              <div class="guide-step">
+                <span class="guide-step-icon">4</span>
+                <div><strong>정답 확인</strong>: 모든 숫자를 잇고 모든 칸을 채운 뒤 [정답 확인] 버튼을 눌러 검증받으세요.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 하단 액션 버튼 -->
+        <div class="rules-actions">
+          <button id="btn-back-to-intro" class="btn-secondary">
+            <span>처음 화면으로</span>
+          </button>
+          <button id="btn-begin-puzzle" class="btn-primary">
+            <span>퍼즐 도전 시작</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         3. 퍼즐 게임 플레이 화면 (Play Screen)
+         ==================================================================== -->
+    <section id="screen-game" class="screen">
+      <div class="game-container">
+        
+        <!-- 상단 스테이지 정보 & 상태 바 -->
+        <header class="game-top-bar">
+          <div class="stage-info">
+            <h2 id="stage-title" class="stage-title">Stage 1</h2>
+            <span id="stage-badge" class="stage-badge">1 / 16</span>
+          </div>
+
+          <div class="stage-stats">
+            <div class="stat-pill" title="격자 크기">
+              <span>격자:</span>
+              <strong id="grid-size-lbl">5 × 5</strong>
+            </div>
+            <div class="stat-pill" title="경과 시간">
+              <span>⏱️</span>
+              <strong id="timer-lbl">00:00</strong>
+            </div>
+            <div class="stat-pill" title="연결된 숫자 쌍">
+              <span>연결:</span>
+              <strong id="pairs-count-lbl">0 / 5</strong>
+            </div>
+            <div class="stat-pill" title="채워진 격자 비율 (모든 칸 채우기 필수)">
+              <span>채움:</span>
+              <strong id="cells-covered-lbl">0 / 25 (0%)</strong>
+            </div>
+          </div>
+
+          <div class="top-bar-controls">
+            <button id="btn-sound" class="btn-icon" title="사운드 토글">🔊</button>
+            <button id="btn-rules-modal" class="btn-icon" title="규칙 다시보기">📐</button>
+          </div>
+        </header>
+
+        <!-- 중앙 퍼즐 보드 캔버스 영역 -->
+        <div class="board-wrapper">
+          <canvas id="puzzle-canvas"></canvas>
+        </div>
+
+        <!-- 하단 조작 바 -->
+        <footer class="game-bottom-bar">
+          <div class="action-group">
+            <button id="btn-undo" class="btn-action" title="직전 그린 선 취소">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7v6h6"></path>
+                <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path>
+              </svg>
+              <span>되돌리기</span>
+            </button>
+            <button id="btn-reset" class="btn-action" title="현재 스테이지 선 전체 초기화">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 4v6h-6"></path>
+                <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"></path>
+              </svg>
+              <span>다시 시작</span>
+            </button>
+          </div>
+
+          <button id="btn-check" class="btn-check" title="정답 확인 및 다음 단계 이동">
+            <span>정답 확인</span>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </button>
+        </footer>
+
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         4. 최종 엔딩 화면 (Ending Screen)
+         ==================================================================== -->
+    <section id="screen-ending" class="screen">
+      <div class="ending-container">
+        <div class="ending-crown">🎓</div>
+        <h2 class="ending-title">수학적 논리의 마스터</h2>
+        <p class="ending-subtitle">총 16개의 정교한 넘버링크 격자 퍼즐을 모두 완벽하게 해결했습니다!</p>
+
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-box-val">16 / 16</div>
+            <div class="stat-box-lbl">완료한 스테이지</div>
+          </div>
+          <div class="stat-box">
+            <div id="end-total-time" class="stat-box-val">00:00</div>
+            <div class="stat-box-lbl">총 소요 시간</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-val">100%</div>
+            <div class="stat-box-lbl">격자 피복률</div>
+          </div>
+        </div>
+
+        <button id="btn-restart-all" class="btn-primary">
+          <span>처음부터 다시 도전</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 4v6h-6"></path>
+            <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"></path>
+          </svg>
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ====================================================================
+       알림 및 정답/오답 안내 모달
+       ==================================================================== -->
+  <div id="modal-alert" class="modal-overlay">
+    <div class="modal-card">
+      <div id="modal-icon" class="modal-icon">📐</div>
+      <h3 id="modal-title" class="modal-title">알림</h3>
+      <p id="modal-body" class="modal-body">내용이 들어갑니다.</p>
+      <div class="modal-actions">
+        <button id="modal-btn-confirm" class="btn-primary" style="padding: 12px 32px; font-size: 1.05rem;">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 데이터 및 스크립트 로드 -->
+  <script src="puzzles.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
